@@ -1,0 +1,15 @@
+{
+    "name": "Code Syntax Highlighting",
+    "package": "code_syntax_highlighting",
+    "author": "Joseph Corrado",
+    "version": "0.1.0",
+    "min_point_version": 50,
+    "max_point_version": 99,
+    "homepage": "https://github.com/jcorrado76/code-syntax-highlighting",
+    "mod": 0,
+    "config": {
+      "default_lang": "python",
+      "line_numbers": false
+    }
+}
+  
