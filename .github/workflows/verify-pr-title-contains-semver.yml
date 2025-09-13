@@ -1,4 +1,4 @@
-name: Verify SemVer PR Title
+name: Verify SemVer in PR Title
 on:
   pull_request:
     types:
