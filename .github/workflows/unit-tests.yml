@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - dev
+      - main
 
 jobs:
   run-unit-tests:
@@ -31,3 +35,11 @@ jobs:
 
       - name: Run unit tests
         run: uv run pytest tests
+
+  all-checks-passed:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs:
+      - run-unit-tests
+    steps:
+      - run: echo "OK"
