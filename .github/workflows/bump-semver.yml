@@ -1,0 +1,71 @@
+# bump the semver version in the pyproject.toml and addon.json files
+# when a PR is merged on main and push the commit automatically
+# push a tag as well
+
+name: bump-semver
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write # allow pushing commits/tags and creating releases
+
+jobs:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine bump from PR title
+        id: bump
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          case "$TITLE" in
+            major:\ *) echo "kind=major" >> $GITHUB_OUTPUT ;;
+            minor:\ *) echo "kind=minor" >> $GITHUB_OUTPUT ;;
+            patch:\ *) echo "kind=patch" >> $GITHUB_OUTPUT ;;
+            *) echo "PR title must start with 'major:', 'minor:' or 'patch:'"; exit 1 ;;
+          esac
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bump version in files
+        id: bumpver
+        env:
+          ADDON_JSON_PATH: code_syntax_highlighting/addon.json # <-- adjust or remove if not needed
+        run: |
+          python scripts/bump_version.py "${{ steps.bump.outputs.kind }}" > .version
+          echo "version=$(cat .version)" >> $GITHUB_OUTPUT
+          echo "New version: $(cat .version)"
+
+      - name: Commit version bump back to main
+        run: |
+          VERSION="${{ steps.bumpver.outputs.version }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          if [ -f code_syntax_highlighting/addon.json ]; then git add code_syntax_highlighting/addon.json; fi
+          git commit -m "chore(release): v${VERSION} [skip ci]" || echo "No changes to commit"
+          git push
+
+      - name: Tag version
+        run: |
+          VERSION="${{ steps.bumpver.outputs.version }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      # Optional: publish a GitHub Release (omit if you just want bump+tag)
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: v${{ steps.bumpver.outputs.version }}
+      #     name: v${{ steps.bumpver.outputs.version }}
+      #     generate_release_notes: true
